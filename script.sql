@@ -1,34 +1,75 @@
+-- 4 Armazenamento dos resultados
+-- Os resultados obtidos pelos cursores devem ser armazenados numa tabela com os seguintes campos
+-- Crie uma tabela para armazenar os resultados
+CREATE TABLE resultados (
+    id serial PRIMARY KEY,
+    nome_pais VARCHAR,
+    preco_medio NUMERIC,
+    descricao_mais_longa TEXT
+);
+
+DO $$
+DECLARE
+    country_name VARCHAR;
+    avg_price NUMERIC;
+    max_description TEXT;
+BEGIN
+    -- Abra o cursor não vinculado
+    FOR country_name IN (SELECT DISTINCT country FROM tb_wine_reviews) LOOP
+        -- Calcule o preço médio para o país atual
+        SELECT AVG(price) INTO avg_price
+        FROM tb_wine_reviews
+        WHERE country = country_name;
+
+        -- Encontre a descrição mais longa para o país atual usando uma subconsulta
+        SELECT description INTO max_description
+        FROM tb_wine_reviews
+        WHERE country = country_name
+        ORDER BY LENGTH(description) DESC
+        LIMIT 1;
+
+        -- Insira os resultados na tabela "resultados"
+        INSERT INTO resultados (nome_pais, preco_medio, descricao_mais_longa)
+        VALUES (country_name, avg_price, max_description);
+    END LOOP;
+END;
+$$;
+
+-- Exiba os resultados armazenados na tabela
+SELECT * FROM resultados;
+
+
 -- 3.Cursor vinculado
 -- Identificar a descrição mais longa para os vinhos de cada país utilizando um cursor
 -- vinculado
-DO $$
-DECLARE
-    cur_cursor CURSOR FOR SELECT DISTINCT country FROM tb_wine_reviews ;
-    country_name VARCHAR;
-    max_description TEXT;
-    description_row RECORD;
-BEGIN
-    OPEN cur_cursor;
-    LOOP
-        FETCH cur_cursor INTO country_name;
-        EXIT WHEN NOT FOUND;
+-- DO $$
+-- DECLARE
+--     cur_cursor CURSOR FOR SELECT DISTINCT country FROM tb_wine_reviews ;
+--     country_name VARCHAR;
+--     max_description TEXT;
+--     description_row RECORD;
+-- BEGIN
+--     OPEN cur_cursor;
+--     LOOP
+--         FETCH cur_cursor INTO country_name;
+--         EXIT WHEN NOT FOUND;
 
-        max_description := NULL;
+--         max_description := NULL;
 
-        FOR description_row IN 
-            (SELECT description FROM tb_wine_reviews  WHERE country = country_name)
-        LOOP
-            IF max_description IS NULL OR LENGTH(description_row.description) > LENGTH(max_description) THEN
-                max_description := description_row.description;
-            END IF;
-        END LOOP;
+--         FOR description_row IN 
+--             (SELECT description FROM tb_wine_reviews  WHERE country = country_name)
+--         LOOP
+--             IF max_description IS NULL OR LENGTH(description_row.description) > LENGTH(max_description) THEN
+--                 max_description := description_row.description;
+--             END IF;
+--         END LOOP;
 
-        RAISE NOTICE 'País: %, Descrição mais longa: %', country_name, max_description;
-    END LOOP;
+--         RAISE NOTICE 'País: %, Descrição mais longa: %', country_name, max_description;
+--     END LOOP;
 
-    CLOSE cur_cursor;
-END;
-$$
+--     CLOSE cur_cursor;
+-- END;
+-- $$
 
 -- -- 2 Cursor não vinculado
 -- -- Calcular o preço médio dos vinhos de cada país utilizando um cursor não vinculado.
